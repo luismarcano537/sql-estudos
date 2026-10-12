@@ -443,3 +443,83 @@ VALUES
 
 SELECT *
 FROM TB_ORDER_ITENS;
+
+SELECT *
+FROM TB_PRODUCTS;
+
+--Aumente em 10% o preço dos produtos de uma categoria. Rode um SELECT antes e
+--depois para conferir.
+
+-- 1. Primeiro localizei a categoria com mais produtos, sendo a id: 11.
+SELECT
+	CA.CATEGORY_ID AS CODIGO,
+	CA.CATEGORY_NAME AS CATEGORIA,
+	COUNT(PR.PRODUCT_CATEGORY_ID) AS TOTAL_PRODUTOS
+FROM TB_CATEGORIES AS CA
+INNER JOIN TB_PRODUCTS AS PR
+ON PR.PRODUCT_CATEGORY_ID = CA.CATEGORY_ID
+GROUP BY CA.CATEGORY_ID, CA.CATEGORY_NAME;
+
+-- Select para fazer comparação.
+SELECT *
+FROM TB_PRODUCTS
+WHERE PRODUCT_CATEGORY_ID = 11
+ORDER BY PRODUCT_ID;
+
+-- Aumento apenas 10% aos produtos da categoria 11.
+UPDATE TB_PRODUCTS
+SET PRODUCT_PRICE = PRODUCT_PRICE * 1.10
+WHERE PRODUCT_CATEGORY_ID = 11;
+
+-- Faço select novamente para validar o resultado.
+SELECT *
+FROM TB_PRODUCTS
+WHERE PRODUCT_CATEGORY_ID = 11
+ORDER BY PRODUCT_ID;
+
+
+-- Altere para 'Cancelado' o status dos pedidos com mais de 10 dias.
+
+-- Primeiro faço uma comparação se realmente há valores que atendam minha condição
+SELECT * 
+FROM TB_ORDERS 
+WHERE ORDER_CREATION_DATE < DATEADD(DAY, -10, GETDATE());
+
+-- Verifico o status de cancelado
+SELECT *
+FROM TB_STATUS;
+
+-- Faço o update nos registros que atendam minha condição
+UPDATE TB_ORDERS
+SET ORDER_STATUS_ID = 1002
+WHERE ORDER_CREATION_DATE < DATEADD(DAY, -10, GETDATE());
+
+-- Valido os registros que foram alterados
+SELECT * 
+FROM TB_ORDERS 
+WHERE ORDER_STATUS_ID =1002;
+
+--Tente excluir uma categoria que possui produtos. Explique o erro e resolva excluindo
+-- os registros na ordem correta.
+
+DELETE TB_CATEGORIES WHERE CATEGORY_ID = 11;
+
+SELECT *
+FROM TB_PRODUCTS
+WHERE PRODUCT_CATEGORY_ID = 11;
+
+DELETE TB_PRODUCTS 
+WHERE PRODUCT_CATEGORY_ID = 11;
+
+SELECT * 
+FROM TB_ORDER_ITENS 
+WHERE PRODUCT_ID IN (1, 2, 3, 4, 5, 6, 7, 8)
+
+DELETE TB_ORDER_ITENS 
+WHERE PRODUCT_ID IN (1, 2, 3, 4, 5, 6, 7, 8);
+
+SELECT * 
+FROM TB_CATEGORIES;
+
+SELECT * 
+FROM TB_PRODUCTS WHERE PRODUCT_CATEGORY_ID = 11;
