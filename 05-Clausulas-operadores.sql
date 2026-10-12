@@ -1,0 +1,186 @@
+--Liste os produtos com preço entre dois valores, ordenados por preço decrescente e,
+--em caso de empate, por nome.
+
+SELECT 
+	P.PRODUCT_ID AS Código,
+	P.PRODUCT_NAME AS Nome,
+	C.CATEGORY_NAME AS Categoria,
+	P.PRODUCT_STOCK AS Quantidade,
+	P.PRODUCT_PRICE AS PRICE
+FROM TB_PRODUCTS AS P
+INNER JOIN TB_CATEGORIES AS C
+ON C.CATEGORY_ID = P.PRODUCT_CATEGORY_ID
+WHERE PRODUCT_PRICE BETWEEN 5 AND 10
+ORDER BY PRODUCT_PRICE DESC, PRODUCT_NAME;
+
+-- Liste as cidades distintas dos clientes. Depois, conte quantas UFs diferentes existem
+-- usando COUNT(DISTINCT).
+
+SELECT DISTINCT
+	CUSTOMER_CITY AS CIDADE
+FROM TB_CUSTOMERS;
+
+SELECT 
+	COUNT(DISTINCT CUSTOMER_STATE) AS UF_Diferentes
+FROM TB_CUSTOMERS
+
+
+-- Implemente paginação com OFFSET/FETCH usando as variáveis @Pagina e
+-- @TamanhoPagina. Escreva no caderno a fórmula do OFFSET.
+
+DECLARE @Pagina INT;
+DECLARE @TamanhoPagina INT;
+
+SET @Pagina = 1;
+SET @TamanhoPagina = 10;
+
+SELECT 
+	O.ORDER_ID AS Numero_Pedido,
+	C.CUSTOMER_NAME AS Cliente,
+	S.STATUS_DESCRIPTION AS Status,
+	O.ORDER_CREATION_DATE AS Data_Pedido
+FROM TB_ORDERS AS O
+INNER JOIN TB_CUSTOMERS AS C
+ON O.ORDER_CUSTOMER_ID = C.CUSTOMER_ID
+INNER JOIN TB_STATUS AS S
+ON O.ORDER_STATUS_ID = S.STATUS_ID
+ORDER BY O.ORDER_ID
+OFFSET (@Pagina -1) * @TamanhoPagina ROWS
+FETCH NEXT @TamanhoPagina ROWS ONLY;
+
+-- Com LIKE, encontre clientes cujo nome: começa com 'M'; contém 'silva'; tem email
+-- terminado em '@gmail.com'; tem 'a' como segunda letra.
+
+SELECT
+	*
+FROM TB_CUSTOMERS
+WHERE CUSTOMER_NAME LIKE 'M%';
+
+SELECT
+	*
+FROM TB_CUSTOMERS
+WHERE CUSTOMER_NAME LIKE '%silva%';
+
+SELECT 
+	*
+FROM TB_CUSTOMERS
+WHERE CUSTOMER_EMAIL LIKE '%@gmail.com';
+
+SELECT
+	*
+FROM TB_CUSTOMERS
+WHERE CUSTOMER_NAME LIKE '_a%';
+
+-- Liste os pedidos sem vendedor. Explique por que WHERE VendedorId = NULL não
+-- retorna nada.
+
+SELECT
+	*
+FROM TB_ORDERS
+WHERE ORDER_SELLER_ID IS NULL 
+OR ORDER_SELLER_ID = 0; 
+
+-- Mostre o maior e o menor preço de cada categoria.
+
+SELECT
+	C.CATEGORY_NAME AS Categoria,
+	MIN(PRODUCT_PRICE) AS MenorPreco, -- Menor preço
+	MAX(PRODUCT_PRICE) AS MaiorPreco -- Maior preço
+FROM TB_PRODUCTS AS P
+INNER JOIN TB_CATEGORIES AS C
+ON P.PRODUCT_CATEGORY_ID = C.CATEGORY_ID
+GROUP BY C.CATEGORY_NAME;
+
+-- Em Pedidos.VendedorId, compare COUNT(*), COUNT(VendedorId) e COUNT(DISTINCT
+-- VendedorId). Explique por que os três resultados são diferentes.
+
+-- Traz o total de pedidos por vendedor
+SELECT 
+	S.SELLER_NAME AS VENDEDOR,
+	COUNT(*) AS Total_pedidos
+FROM TB_ORDERS AS O
+INNER JOIN TB_SELLERS AS S
+ON O.ORDER_SELLER_ID = S.SELLER_ID
+GROUP BY S.SELLER_NAME
+ORDER BY Total_pedidos DESC;
+
+-- Traz o total de pedidos com vendedor
+SELECT
+	COUNT(ORDER_SELLER_ID)
+FROM TB_ORDERS;
+
+-- Traz o total de vendedores que fizeram vendas
+SELECT
+	COUNT(DISTINCT ORDER_SELLER_ID)
+FROM TB_ORDERS;
+
+
+-- Calcule o valor total de cada pedido com SUM(Quantidade * PrecoUnitario).
+SELECT 
+	O.ORDER_ID AS N_Pedido,
+	SUM(OI.ORDER_ITEM_QUANTIDADE * OI.ORDER_ITEM_UNIT_VALUE) AS VALOR_TOTAL
+FROM TB_ORDERS AS O
+INNER JOIN TB_ORDER_ITENS AS OI
+ON OI.ORDER_ID = O.ORDER_ID
+GROUP BY O.ORDER_ID
+ORDER BY VALOR_TOTAL DESC;
+
+-- Conte os pedidos por status e por mês/ano.
+
+SELECT 
+	S.STATUS_DESCRIPTION AS Status,
+	COUNT(*) AS TOTAL_PEDIDOS
+FROM TB_ORDERS AS O
+INNER JOIN TB_STATUS AS S
+ON S.STATUS_ID = O.ORDER_STATUS_ID
+GROUP BY S.STATUS_DESCRIPTION
+ORDER BY TOTAL_PEDIDOS DESC;
+
+SELECT
+	FORMAT(ORDER_CREATION_DATE, 'MM/yyyy') AS MES_ANO,
+	COUNT(*) AS TOTAL_PEDIDOS
+FROM TB_ORDERS
+GROUP BY FORMAT(ORDER_CREATION_DATE, 'MM/yyyy')
+ORDER BY TOTAL_PEDIDOS DESC;
+
+--Com HAVING, liste os clientes com mais de 2 pedidos e as categorias com preço
+--médio acima de um valor. No caderno, escreva a ordem lógica de execução: FROM,
+--WHERE, GROUP BY, HAVING, SELECT, ORDER BY.
+
+SELECT
+	C.CUSTOMER_ID AS COD_CLIENTE,
+	C.CUSTOMER_NAME AS CLIENTE,
+	COUNT(O.ORDER_CUSTOMER_ID) AS TOTAL_PEDIDOS
+FROM TB_ORDERS AS O
+INNER JOIN TB_CUSTOMERS AS C
+ON O.ORDER_CUSTOMER_ID = C.CUSTOMER_ID
+GROUP BY C.CUSTOMER_ID, C.CUSTOMER_NAME
+HAVING COUNT(O.ORDER_CUSTOMER_ID) >= 2
+ORDER BY TOTAL_PEDIDOS DESC;
+
+
+SELECT 
+	CR.CATEGORY_ID AS COD_CATEGORY,
+	CR.CATEGORY_NAME AS CATEGORY,
+	AVG(PR.PRODUCT_PRICE) AS MEDIA_PRECO
+FROM TB_PRODUCTS AS PR
+INNER JOIN TB_CATEGORIES AS CR
+ON PR.PRODUCT_CATEGORY_ID = CR.CATEGORY_ID
+GROUP BY CR.CATEGORY_ID, CR.CATEGORY_NAME
+HAVING AVG(PR.PRODUCT_PRICE) > 10;
+
+--Filtre os pedidos de um mês com BETWEEN numa coluna DATETIME. Descubra por que
+--pedidos do último dia podem sumir e corrija usando >= início AND < início do mês
+--seguinte
+
+SELECT
+	*
+FROM TB_ORDERS
+WHERE ORDER_CREATION_DATE BETWEEN '2026-08-01' AND '2026-08-31'
+ORDER BY ORDER_CREATION_DATE DESC;
+
+SELECT
+	*
+FROM TB_ORDERS
+WHERE ORDER_CREATION_DATE >= '2026-08-01' AND ORDER_CREATION_DATE <= '2026-08-30'
+ORDER BY ORDER_CREATION_DATE DESC;
